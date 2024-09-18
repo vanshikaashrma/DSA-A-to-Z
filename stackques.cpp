@@ -29,7 +29,6 @@ public:
 class HistoryStack {
 private:
     PageNode* top; // Pointer to the top page in the stack
-
 public:
     HistoryStack() : top(nullptr) {}
 
@@ -41,30 +40,30 @@ public:
         }
     }
 
-    void visitPage(const string& pageName) {
+    void push(const string& pageName) {
         PageNode* newPage = new PageNode(pageName);
-        newPage->next = top; // Link the new page to the top
-        top = newPage;       // Update top to the new page
+        newPage->next = top;
+        top = newPage;
     }
 
-    void back(int steps) {
-        while (steps-- > 0 && top != nullptr) {
-            cout << "Going back from: " << top->pageName << endl;
-            top = top->next; // Move back by popping the top page
-        }
+    string pop() {
+        if (top == nullptr) return ""; // Empty stack
+        string pageName = top->pageName;
+        PageNode* temp = top;
+        top = top->next;
+        delete temp;
+        return pageName;
     }
 
-    void forward(int steps) {
-        // Since this is a stack, we can't go forward without a separate structure.
-        // We'll have to keep track of the forward history separately.
-        // This can be done by maintaining a second stack for forward navigation,
-        // but for simplicity, let's assume forward navigation is limited to visiting new pages.
-
-        cout << "Forward navigation not implemented directly. You can visit a new page instead." << endl;
+    bool isEmpty() const {
+        return top == nullptr;
     }
 
-    void displayHistory() const {
-        cout << "Browsing History: ";
+    string peek() const {
+        return top ? top->pageName : "";
+    }
+
+    void display() const {
         PageNode* current = top;
         while (current != nullptr) {
             cout << current->pageName << (current->next ? " -> " : "");
@@ -74,28 +73,65 @@ public:
     }
 };
 
+class BrowserHistory {
+private:
+    HistoryStack backStack;   // Stack for back navigation
+    HistoryStack forwardStack; // Stack for forward navigation
+    string currentPage;      // Current page
+
+public:
+    void visitPage(const string& pageName) {
+        if (!currentPage.empty()) {
+            backStack.push(currentPage); // Push current page onto back stack
+        }
+        currentPage = pageName; // Set the new current page
+        forwardStack = HistoryStack(); // Clear forward stack when visiting a new page
+    }
+
+    void back(int steps) {
+        while (steps-- > 0 && !backStack.isEmpty()) {
+            forwardStack.push(currentPage); // Push current page onto forward stack
+            currentPage = backStack.pop(); // Move back
+        }
+    }
+
+    void forward(int steps) {
+        while (steps-- > 0 && !forwardStack.isEmpty()) {
+            backStack.push(currentPage); // Push current page onto back stack
+            currentPage = forwardStack.pop(); // Move forward
+        }
+    }
+
+    void displayHistory() const {
+        cout << "Back History: ";
+        backStack.display();
+        cout << "Current Page: " << currentPage << endl;
+        cout << "Forward History: ";
+        forwardStack.display();
+    }
+};
+
 int main() {
-    HistoryStack browserHistory;
+    BrowserHistory browser;
 
     // Simulating page visits
-    browserHistory.visitPage("p1");
-    browserHistory.visitPage("p2");
-    browserHistory.visitPage("p3");
-    browserHistory.visitPage("p4");
-
-    // Display current history
-    browserHistory.displayHistory(); // p4 -> p3 -> p2 -> p1
+    browser.visitPage("p1");
+    browser.visitPage("p2");
+    browser.visitPage("p3");
+    browser.visitPage("p4");
+    browser.displayHistory(); // Show current state
 
     // Move back 2 steps
-    browserHistory.back(2);
-    browserHistory.displayHistory(); // p2 -> p1
+    browser.back(2);
+    browser.displayHistory(); // Show current state
 
-    // Move forward (not implemented, but can visit a new page)
-    browserHistory.forward(1); // Just an informational message
+    // Move forward 1 step
+    browser.forward(1);
+    browser.displayHistory(); // Show current state
 
     // Visit a new page
-    browserHistory.visitPage("p5");
-    browserHistory.displayHistory(); // p5 -> p2 -> p1
+    browser.visitPage("p5");
+    browser.displayHistory(); // Show current state
 
     return 0;
 }
